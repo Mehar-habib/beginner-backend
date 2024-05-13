@@ -52,7 +52,7 @@ const userSchema = new Schema(
 userSchema.pre("save", async function (next) {
   // when call any field this plugin call, solution: if 'isModified' then bcrypt the password otherwise no
   if (!this.isModified("password")) return next();
-  this.password = bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 //create own methods
