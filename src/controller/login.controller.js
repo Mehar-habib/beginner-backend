@@ -1,5 +1,5 @@
 import { User } from "../models/user.model.js";
-import { ApiResponse } from "../utils/ApiResponse";
+import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -10,8 +10,8 @@ const generateAccessAndRefreshTokens = async (userId) => {
     const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
-    //    jo schema ma user fields required hn un ki validation nii karnii
-    await user.save({ validationBeforeSave: false });
+    await user.save({ validateBeforeSave: false });
+
     return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(
@@ -22,38 +22,46 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const loginUser = asyncHandler(async (req, res) => {
-  // req body => data
+  // req body -> data
   // username or email
-  // find the user
-  // password check
-  // access_token and refresh_token
-  // send cookie
-  const { username, email, password } = req.body;
-  if (!username || !email) {
-    throw new ApiError(400, "username or email is required!");
+  //find the user
+  //password check
+  //access and refresh token
+  //send cookie
+
+  const { email, username, password } = req.body;
+
+  if (!username && !email) {
+    throw new ApiError(400, "username or email is required");
   }
+
   const user = await User.findOne({
     $or: [{ username }, { email }],
   });
+
   if (!user) {
-    throw new ApiError("User does not exist!");
+    throw new ApiError(404, "User does not exist");
   }
+
   const isPasswordValid = await user.isPasswordCorrect(password);
+
   if (!isPasswordValid) {
-    throw new ApiError(401, "Password is incorrect!");
+    throw new ApiError(401, "Invalid user credentials");
   }
+
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id
   );
-  const loggedInUser = User.findById(user._id).select(
+
+  const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
-  //   when send cookie set option doest not cookie change
   const options = {
     httpOnly: true,
     secure: true,
   };
+
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -70,5 +78,4 @@ const loginUser = asyncHandler(async (req, res) => {
       )
     );
 });
-
 export { loginUser };
