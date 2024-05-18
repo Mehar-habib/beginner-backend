@@ -17,7 +17,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       },
     },
     { new: true } // return updated values
-  ).select("-password");
+  ).select("-password -refreshToken");
   res
     .status(200)
     .json(new ApiResponse(200, user, "Account details updated successfully"));
